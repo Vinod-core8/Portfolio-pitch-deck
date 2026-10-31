@@ -163,7 +163,7 @@ var CATEGORIES = [
   function tile(m, attrs, button){
     var s='flex-grow:'+m.r+';aspect-ratio:'+m.r, tag=button?'button':'span';
     var inner = m.v
-      ? '<video src="'+m.v+'-loop.mp4" poster="'+m.v+'-cover.jpg" muted loop playsinline preload="none" aria-hidden="true"></video>'+playSvg
+      ? '<video data-src="'+m.v+'-loop.mp4" poster="'+m.v+'-cover.jpg" muted loop playsinline preload="none" aria-hidden="true"></video>'+playSvg
       : '<img src="'+m.i+'" alt="'+esc(m.t)+'" loading="lazy">';
     return '<'+tag+' class="tile" style="'+s+'" '+(attrs||'')+'>'+inner+'</'+tag+'>';
   }
@@ -179,7 +179,7 @@ var CATEGORIES = [
   }
   function boardMedia(m,cls){
     var s='aspect-ratio:'+m.r;
-    if(m.v) return '<div class="bt med '+(cls||'')+'" style="'+s+'"><video src="'+m.v+'-loop.mp4" poster="'+m.v+'-cover.jpg" muted loop playsinline preload="none" aria-hidden="true"></video><span class="play"><svg viewBox="0 0 24 24" fill="#121214"><path d="M7 4.5v15l13-7.5z"/></svg></span></div>';
+    if(m.v) return '<div class="bt med '+(cls||'')+'" style="'+s+'"><video data-src="'+m.v+'-loop.mp4" poster="'+m.v+'-cover.jpg" muted loop playsinline preload="none" aria-hidden="true"></video><span class="play"><svg viewBox="0 0 24 24" fill="#121214"><path d="M7 4.5v15l13-7.5z"/></svg></span></div>';
     return '<div class="bt med '+(cls||'')+'" style="'+s+'"><img src="'+m.i+'" alt="'+esc(m.t)+'" loading="lazy"></div>';
   }
   function renderHome(el){
@@ -276,12 +276,18 @@ var CATEGORIES = [
 
   /* ---------- shared behaviour ---------- */
   var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches, vo=null;
+  function activateVideo(v){
+    if(!v.src && v.dataset.src){
+      v.src=v.dataset.src;
+      v.load();
+    }
+  }
   var io=('IntersectionObserver' in window)?new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.08}):null;
   function afterRender(root){
     document.querySelectorAll('.rv:not(.in)').forEach(function(el){io?io.observe(el):el.classList.add('in')});
     if(reduce||!('IntersectionObserver' in window))return;
     if(vo)vo.disconnect();
-    vo=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){var p=v.play();if(p&&p.catch)p.catch(function(){})}else v.pause();})},{threshold:.2});
+    vo=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){activateVideo(v);var p=v.play();if(p&&p.catch)p.catch(function(){})}else v.pause();})},{threshold:.2});
     root.querySelectorAll('video').forEach(function(v){vo.observe(v)});
   }
   if(reduce){var hv=document.querySelector('.hero video');if(hv){hv.removeAttribute('autoplay');hv.pause();}}
@@ -321,7 +327,7 @@ var CATEGORIES = [
     for(var k=0; more; k++){ more=false; piles.forEach(function(p){ if(p[k]){ items.push(p[k]); more=true; } }); }
     var html=items.map(function(it){
       var m=it.m, inner = it.live
-        ? '<video src="'+m.v+'-loop.mp4" poster="'+m.v+'-cover.jpg" muted loop playsinline preload="none" aria-hidden="true"></video>'
+        ? '<video data-src="'+m.v+'-loop.mp4" poster="'+m.v+'-cover.jpg" muted loop playsinline preload="none" aria-hidden="true"></video>'
         : '<img src="'+(m.v?m.v+'-cover.jpg':m.i)+'" alt="'+esc(it.x.name)+': '+esc(m.t)+'" loading="lazy">';
       return '<a class="rb'+(it.live?' live':'')+'" href="'+it.c.id+'.html#'+it.x.id+'" style="aspect-ratio:'+m.r+'" tabindex="-1">'+inner+'<span>'+esc(it.x.name)+'</span></a>';
     }).join('');
@@ -329,7 +335,7 @@ var CATEGORIES = [
     el.querySelectorAll('a').forEach(function(a,i){ if(i>=items.length) a.setAttribute('aria-hidden','true'); });
     var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if(reduce||!('IntersectionObserver' in window)) return;
-    var io=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){var p=v.play();if(p&&p.catch)p.catch(function(){});}else v.pause();});},{root:null,rootMargin:'0px 200px',threshold:0.01});
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){activateVideo(v);var p=v.play();if(p&&p.catch)p.catch(function(){})}else v.pause();});},{root:null,rootMargin:'0px 200px',threshold:0.01});
     el.querySelectorAll('video').forEach(function(v){io.observe(v);});
   }
 
@@ -338,6 +344,7 @@ var CATEGORIES = [
     var rib=document.getElementById('ribbon'); if(rib && !rib.children.length) renderRibbon(rib);
     if(home) renderHome(home);
     if(cat) renderCategory(cat, cat.getAttribute('data-cat'));
+    afterRender(document.body);
   }
   boot();
   [mobile, window.matchMedia('(max-width:999px)')].forEach(function(mq){
