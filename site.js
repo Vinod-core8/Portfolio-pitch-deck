@@ -318,9 +318,8 @@ var CATEGORIES = [
   function renderRibbon(el){
     var piles=[];
     CATEGORIES.forEach(function(c){c.clients.forEach(function(x){
-      var n=RIBBON_FEATURE[x.id], pile=[];
-      if(n){ x.media.filter(function(m){return m.v}).slice(0,n).forEach(function(m){pile.push({m:m,c:c,x:x,live:true});}); }
-      else { var p=x.media.filter(function(m){return !m.v})[0]||x.media[0]; if(p) pile.push({m:p,c:c,x:x}); }
+      var n=RIBBON_FEATURE[x.id]||2, pile=[];
+      x.media.filter(function(m){return m.v}).slice(0,n).forEach(function(m){pile.push({m:m,c:c,x:x,live:true});});
       if(pile.length) piles.push(pile);
     });});
     var items=[], more=true;
